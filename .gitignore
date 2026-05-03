@@ -1,0 +1,75 @@
+# ── Secrets — NEVER commit ─────────────────────────────────────────────
+# The setup wizard writes a JSON file with the operator's OpenAI key,
+# Postgres password, and Neo4j password. It must not leave the host.
+backend/data/runtime-config.json
+backend/data/runtime-config.json.tmp
+backend/.env
+backend/.env.*
+.env
+.env.*
+*.pem
+*.key
+secrets.json
+*.secret
+
+# ── Persisted user data ────────────────────────────────────────────────
+# Uploads, FAISS indexes, RAG store, and any other generated artifacts
+# under data/ are per-deploy and may contain user content.
+backend/data/
+data/
+!backend/data/.gitkeep
+
+# ── Python ─────────────────────────────────────────────────────────────
+backend/.venv/
+backend/venv/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# ── Node / Vite / Frontend ─────────────────────────────────────────────
+frontend/node_modules/
+node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+.vite/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── OS / editor ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── Vercel ─────────────────────────────────────────────────────────────
+.vercel/
+
+# ── Local backups / transient ──────────────────────────────────────────
+*.bak
+*.tmp
+*.orig
+/tmp/
+
+# ── Scratch / personal notes (never publish) ───────────────────────────
+backend/newq.py
+backend/scratch*.py
+notes/
+NOTES.md
+SECRETS.md

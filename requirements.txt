@@ -1,0 +1,9 @@
+# Root requirements file used by Vercel's Python serverless runtime.
+# Pulls in everything the FastAPI backend needs so the function under
+# api/index.py can import `app.main`.
+#
+# Note for Vercel: the full dependency set (faiss-cpu, pandas, numpy,
+# langgraph) is large. If you hit Vercel's 250 MB function limit,
+# consider splitting heavy paths off to a stateful host and running
+# Vercel only as a thin frontend + lightweight API.
+-r backend/requirements.txt
