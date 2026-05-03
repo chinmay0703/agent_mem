@@ -8,7 +8,16 @@ const LS_KEY = "chatmem.apiBase";
 function readBase() {
   try {
     const v = localStorage.getItem(LS_KEY);
-    if (v && typeof v === "string") return v.replace(/\/+$/, "");
+    if (v && typeof v === "string") {
+      // Self-heal old entries that were saved before the `/api`
+      // normalization existed: an existing user has
+      // `http://localhost:8000` cached, so callers building paths like
+      // `${BASE}/setup/test/openai` get 405s. Append `/api` when
+      // missing so the next request goes to the right mount point.
+      let cleaned = v.replace(/\/+$/, "");
+      if (cleaned && !/\/api$/i.test(cleaned)) cleaned = `${cleaned}/api`;
+      return cleaned;
+    }
   } catch (_) {}
   return import.meta.env.VITE_API_BASE || "/api";
 }
@@ -20,9 +29,14 @@ export function getApiBase() {
 }
 
 export function setApiBase(url) {
-  // Normalize: trim, strip trailing slash, allow either
-  // `http://host:port` or `http://host:port/api`. Same backend either way.
-  const cleaned = (url || "").trim().replace(/\/+$/, "");
+  // Normalize so BASE always ends with `/api`. The FastAPI backend
+  // mounts every route under `API_PREFIX = "/api"`, and the wizard lets
+  // users paste either `http://host:port` (server root) or
+  // `http://host:port/api` — both must end up addressing the same
+  // mount point. Without this we'd send POST /setup/test/openai to the
+  // server root and get a 405 from a path that only exists at /api/...
+  let cleaned = (url || "").trim().replace(/\/+$/, "");
+  if (cleaned && !/\/api$/i.test(cleaned)) cleaned = `${cleaned}/api`;
   BASE = cleaned || "/api";
   try {
     if (cleaned) localStorage.setItem(LS_KEY, cleaned);
