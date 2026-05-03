@@ -124,7 +124,12 @@ function Nav({ onGetStarted, onClose, showingSetup }) {
     <header className="lp-nav">
       <a className="lp-brand" href="#top" onClick={goSection("top")}>
         <span className="lp-logo">
-          <span className="lp-logo-orb" />
+          <img
+            src="/agent-mem-icon.png"
+            alt="Agent Mem"
+            className="lp-logo-img"
+            draggable="false"
+          />
           <span className="lp-logo-pulse" />
         </span>
         <span className="lp-brand-text">Agent Mem</span>
@@ -167,26 +172,36 @@ function Nav({ onGetStarted, onClose, showingSetup }) {
 function Hero({ onGetStarted }) {
   return (
     <section id="top" className="lp-hero">
-      <span className="lp-eyebrow">Memory-augmented AI · v1</span>
-      <h1 className="lp-hero-title">
-        AI that <span className="lp-grad">actually remembers</span>.
-      </h1>
-      <p className="lp-hero-sub">
-        Drop in your documents. Talk to it. It builds a knowledge graph as you
-        chat — facts, relationships, plans, all retrievable later. No
-        fine-tuning. No vendor lock-in. Yours.
-      </p>
-      <div className="lp-hero-ctas">
-        <button className="lp-btn-primary" onClick={onGetStarted}>
-          Get started — free
-        </button>
-        <a className="lp-btn-secondary" href="#demo">
-          Watch the demo
-        </a>
+      <div className="lp-hero-text">
+        <span className="lp-eyebrow">Memory-augmented AI · v1</span>
+        <h1 className="lp-hero-title">
+          AI that <span className="lp-grad">actually remembers</span>.
+        </h1>
+        <p className="lp-hero-sub">
+          Drop in your documents. Talk to it. It builds a knowledge graph as
+          you chat — facts, relationships, plans, all retrievable later. No
+          fine-tuning. No vendor lock-in. Yours.
+        </p>
+        <div className="lp-hero-ctas">
+          <button className="lp-btn-primary" onClick={onGetStarted}>
+            Get started — free
+          </button>
+          <a className="lp-btn-secondary" href="#demo">
+            Watch the demo
+          </a>
+        </div>
+        <p className="lp-hero-trust">
+          Self-hosted · Your credentials · Your data · Your machine
+        </p>
       </div>
-      <p className="lp-hero-trust">
-        Self-hosted · Your credentials · Your data · Your machine
-      </p>
+      <div className="lp-hero-art" aria-hidden>
+        <img
+          src="/agent-mem-icon.png"
+          alt=""
+          className="lp-hero-orb"
+          draggable="false"
+        />
+      </div>
     </section>
   );
 }

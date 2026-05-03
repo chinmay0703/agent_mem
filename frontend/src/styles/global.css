@@ -1683,15 +1683,19 @@ body.resizing-h * {
   height: 44px;
   display: inline-block;
 }
-.setup-logo-orb {
+.setup-logo-img {
   position: absolute;
-  inset: 6px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 32%, #fff 0%, rgba(255, 255, 255, 0.55) 35%, transparent 60%),
-    linear-gradient(135deg, var(--accent) 0%, var(--preference) 100%);
-  box-shadow: 0 6px 18px -4px rgba(59, 110, 232, 0.45);
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 4px 10px rgba(59, 110, 232, 0.35));
 }
+/* Legacy CSS orb — hidden, kept for back-compat. */
+.setup-logo-orb { display: none; }
 .setup-logo-pulse {
   position: absolute;
   inset: 0;
@@ -2449,15 +2453,22 @@ body.resizing-h * {
   height: 32px;
   flex: 0 0 auto;
 }
-.lp-logo-orb {
+/* Real PNG icon replaces the CSS-drawn orb. Scaled inside the .lp-logo
+   container so it sits perfectly under the pulsing accent ring. */
+.lp-logo-img {
   position: absolute;
-  inset: 4px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 30%, #fff 0%, rgba(255, 255, 255, 0.6) 35%, transparent 60%),
-    linear-gradient(135deg, var(--lp-blue) 0%, var(--lp-mint) 100%);
-  box-shadow: 0 4px 12px -3px rgba(59, 110, 232, 0.40);
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 3px 8px rgba(59, 110, 232, 0.30));
 }
+/* Legacy CSS orb kept as a compatibility no-op so any leftover markup
+   still renders (transparent). */
+.lp-logo-orb { display: none; }
 .lp-logo-pulse {
   position: absolute;
   inset: 0;
@@ -2512,9 +2523,50 @@ body.resizing-h * {
 }
 
 /* ── Hero ─────────────────────────────────────────────────────────────── */
+/* Two-column hero: copy on the left, the brand orb floating on the right.
+   On mobile it stacks (text first, orb below). */
 .lp-hero {
-  text-align: center;
-  padding: 96px max(24px, calc((100vw - 920px) / 2)) 56px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 1fr);
+  align-items: center;
+  gap: 48px;
+  text-align: left;
+  padding: 96px max(24px, calc((100vw - 1180px) / 2)) 56px;
+}
+.lp-hero-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.lp-hero-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+.lp-hero-orb {
+  width: min(420px, 90%);
+  aspect-ratio: 1;
+  filter: drop-shadow(0 30px 60px rgba(59, 110, 232, 0.30))
+          drop-shadow(0 12px 22px rgba(43, 179, 156, 0.20));
+  animation: lp-hero-float 6s ease-in-out infinite;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+@keyframes lp-hero-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-10px) rotate(0.5deg); }
+}
+@media (max-width: 880px) {
+  .lp-hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 24px;
+  }
+  .lp-hero-text { align-items: center; }
+  .lp-hero-art { min-height: 240px; }
+  .lp-hero-orb { width: min(280px, 70%); }
 }
 .lp-eyebrow {
   display: inline-block;
@@ -2544,8 +2596,8 @@ body.resizing-h * {
   color: transparent;
 }
 .lp-hero-sub {
-  margin: 24px auto 0 auto;
-  max-width: 680px;
+  margin: 24px 0 0 0;
+  max-width: 580px;
   font-size: clamp(16px, 1.6vw, 19px);
   line-height: 1.55;
   color: var(--lp-body);
@@ -2556,7 +2608,6 @@ body.resizing-h * {
   display: inline-flex;
   gap: 14px;
   flex-wrap: wrap;
-  justify-content: center;
 }
 .lp-btn-primary {
   appearance: none;

@@ -155,7 +155,12 @@ export default function SetupWizard({ onComplete, onBack, embedded = false }) {
         <header className="setup-header">
           <div className="setup-brand">
             <span className="setup-logo">
-              <span className="setup-logo-orb" />
+              <img
+                src="/agent-mem-icon.png"
+                alt="Agent Mem"
+                className="setup-logo-img"
+                draggable="false"
+              />
               <span className="setup-logo-pulse" />
             </span>
             <div>
