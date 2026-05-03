@@ -1,9 +1,26 @@
 # Root requirements file used by Vercel's Python serverless runtime.
-# Pulls in everything the FastAPI backend needs so the function under
-# api/index.py can import `app.main`.
-#
-# Note for Vercel: the full dependency set (faiss-cpu, pandas, numpy,
-# langgraph) is large. If you hit Vercel's 250 MB function limit,
-# consider splitting heavy paths off to a stateful host and running
-# Vercel only as a thin frontend + lightweight API.
--r backend/requirements.txt
+# Mirrors backend/requirements.txt (Vercel's parser doesn't follow `-r`
+# includes reliably, so the deps are listed inline here).
+# Keep these two files in sync.
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pydantic-settings==2.5.2
+python-dotenv==1.0.1
+openai==1.51.0
+neo4j==5.24.0
+faiss-cpu>=1.12.0
+numpy>=1.26.4
+langgraph>=0.2.34
+langchain-core>=0.3.10
+langchain-openai>=0.2.2
+tenacity>=8.5.0,<9.0.0
+sse-starlette==2.1.3
+httpx==0.27.2
+asyncpg>=0.29.0
+python-multipart>=0.0.9
+pandas>=2.2.0
+openpyxl>=3.1.0
+pypdf>=5.0.0
+python-docx>=1.1.0
+tiktoken>=0.7.0
