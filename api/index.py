@@ -24,11 +24,12 @@ if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
 # Vercel serverless filesystem is read-only EXCEPT for /tmp. Point the
-# runtime-config writer at /tmp so the wizard's save still succeeds —
-# but note that anything in /tmp is ephemeral per cold-start. For real
-# Vercel deploys, prefer setting credentials as project env vars in the
-# Vercel dashboard so the app boots configured (no wizard needed).
-os.environ.setdefault("CHATMEM_DATA_DIR", "/tmp/chatmem-data")
+# data dir at /tmp so Settings.DATA_DIR.mkdir() at import time succeeds.
+# pydantic-settings binds the field name verbatim (no prefix), so the
+# env var must be `DATA_DIR`. Anything in /tmp is ephemeral per
+# cold-start — for real Vercel deploys, set credentials as project env
+# vars in the Vercel dashboard so the app boots configured.
+os.environ.setdefault("DATA_DIR", "/tmp/chatmem-data")
 
 from app.main import app  # noqa: E402  (must come after sys.path setup)
 

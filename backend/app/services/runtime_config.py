@@ -18,8 +18,11 @@ from pathlib import Path
 from typing import Any
 
 # Anchor to backend/data so the file lives next to other persisted state.
+# Honor a DATA_DIR env override (used on read-only-fs hosts like Vercel,
+# which set DATA_DIR=/tmp/chatmem-data) so the writer points somewhere
+# writable. Same env var consumed by Settings.DATA_DIR.
 _BACKEND_ROOT = Path(__file__).resolve().parent.parent.parent
-_DATA_DIR = _BACKEND_ROOT / "data"
+_DATA_DIR = Path(os.environ["DATA_DIR"]) if os.environ.get("DATA_DIR") else _BACKEND_ROOT / "data"
 _CONFIG_PATH = _DATA_DIR / "runtime-config.json"
 
 # Only these keys are accepted from the wizard — anything else in the JSON
