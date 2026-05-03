@@ -1,6 +1,60 @@
 // All API traffic flows through Vite's /api proxy in dev, and through the
-// host's reverse proxy in prod. Set VITE_API_BASE to override.
-const BASE = import.meta.env.VITE_API_BASE || "/api";
+// host's reverse proxy in prod. The user can also point the deployed
+// frontend at a backend running on their own machine — for that case we
+// read a runtime override from localStorage (set by the wizard's
+// "Backend URL" step). Precedence: localStorage > VITE_API_BASE > /api.
+const LS_KEY = "chatmem.apiBase";
+
+function readBase() {
+  try {
+    const v = localStorage.getItem(LS_KEY);
+    if (v && typeof v === "string") return v.replace(/\/+$/, "");
+  } catch (_) {}
+  return import.meta.env.VITE_API_BASE || "/api";
+}
+
+let BASE = readBase();
+
+export function getApiBase() {
+  return BASE;
+}
+
+export function setApiBase(url) {
+  // Normalize: trim, strip trailing slash, allow either
+  // `http://host:port` or `http://host:port/api`. Same backend either way.
+  const cleaned = (url || "").trim().replace(/\/+$/, "");
+  BASE = cleaned || "/api";
+  try {
+    if (cleaned) localStorage.setItem(LS_KEY, cleaned);
+    else localStorage.removeItem(LS_KEY);
+  } catch (_) {}
+}
+
+export async function pingBackend(url) {
+  // Health probe used by the wizard's "Backend URL" step. The FastAPI
+  // app exposes /health AND /api/health, so we accept either form of
+  // URL the user pasted (with or without /api suffix).
+  const cleaned = (url || "").trim().replace(/\/+$/, "");
+  if (!cleaned) throw new Error("Enter a URL.");
+  // Try /api/health first (matches the canonical mount), then /health.
+  const candidates = cleaned.endsWith("/api")
+    ? [`${cleaned}/health`, `${cleaned.slice(0, -4)}/health`]
+    : [`${cleaned}/api/health`, `${cleaned}/health`];
+  let lastErr = null;
+  for (const u of candidates) {
+    try {
+      const res = await fetch(u, { method: "GET" });
+      if (res.ok) {
+        const body = await res.json().catch(() => ({}));
+        return { ok: true, url: cleaned, status: body.status || "ok" };
+      }
+      lastErr = `${res.status} ${res.statusText}`;
+    } catch (e) {
+      lastErr = e.message || "fetch failed";
+    }
+  }
+  throw new Error(`Backend unreachable at ${cleaned} (${lastErr}).`);
+}
 
 // Surface-level cap so we can show friendlier messages for big inputs.
 export const MAX_MESSAGE_CHARS = 4000;
@@ -91,8 +145,6 @@ export function deleteUser(userId) {
   });
 }
 
-const FILE_BASE = BASE;
-
 export function listFiles(userId) {
   return jsonFetch(`/files/${encodeURIComponent(userId)}`);
 }
@@ -101,8 +153,9 @@ export async function uploadFile(userId, file, threadId = null) {
   const fd = new FormData();
   fd.append("file", file);
   if (threadId) fd.append("thread_id", threadId);
+  // Read BASE at call time so a runtime setApiBase() takes effect.
   const res = await fetch(
-    `${FILE_BASE}/files/${encodeURIComponent(userId)}`,
+    `${BASE}/files/${encodeURIComponent(userId)}`,
     { method: "POST", body: fd },
   );
   let body = null;

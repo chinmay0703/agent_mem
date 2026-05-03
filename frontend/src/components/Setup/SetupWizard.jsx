@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  getApiBase,
   getSetupStatus,
+  pingBackend,
   saveSetup,
+  setApiBase,
   testNeo4j,
   testOpenAI,
   testPostgres,
@@ -11,7 +14,16 @@ import DemoLoop from "./DemoLoop.jsx";
 
 // Step definitions — order matters; "review" must be last so the wizard
 // gates the final save behind a successful test of every prior step.
+// "backend" runs first because everything below it (OpenAI/PG/Neo4j
+// tests, save) goes through the user's chosen backend URL.
 const STEPS = [
+  {
+    id: "backend",
+    label: "Backend",
+    title: "Where is your backend?",
+    blurb:
+      "The Python backend talks to Postgres / Neo4j on your machine. Run it locally, then paste its URL here. The deployed site never touches your databases directly.",
+  },
   {
     id: "openai",
     label: "OpenAI",
@@ -39,6 +51,25 @@ const STEPS = [
 ];
 
 const DEFAULTS = {
+  backend: {
+    // mode: "hosted" -> use the API that ships with this deploy
+    //                  (right path for cloud DBs: Neon, Aura, Supabase,
+    //                  Vercel Postgres — anything reachable from the
+    //                  public internet).
+    // mode: "local"  -> run our Python backend on the user's machine,
+    //                   for localhost Postgres / Neo4j.
+    mode: (() => {
+      const b = getApiBase();
+      // If a previous session pointed us at a localhost backend, start
+      // the wizard in local mode so the URL stays editable.
+      if (b && b !== "/api" && /localhost|127\.0\.0\.1/i.test(b)) return "local";
+      return "hosted";
+    })(),
+    url: (() => {
+      const b = getApiBase();
+      return b && b !== "/api" ? b.replace(/\/api$/, "") : "http://localhost:8000";
+    })(),
+  },
   openai: {
     api_key: "",
     model_name: "gpt-5.2",
@@ -67,11 +98,19 @@ const DEFAULTS = {
 export default function SetupWizard({ onComplete, onBack, embedded = false }) {
   const [stepIdx, setStepIdx] = useState(0);
   const [values, setValues] = useState(DEFAULTS);
-  const [tests, setTests] = useState({ openai: null, postgres: null, neo4j: null });
+  const [tests, setTests] = useState({
+    backend: null,
+    openai: null,
+    postgres: null,
+    neo4j: null,
+  });
   const [busy, setBusy] = useState(false);
   const [launchErr, setLaunchErr] = useState(null);
 
   // Hydrate any previously-saved values so a re-visit shows them.
+  // We only fetch /setup/status if the user has already pointed us at a
+  // working backend — otherwise the request will fail and dump us into
+  // the catch block (which is fine, we just keep defaults).
   useEffect(() => {
     let cancel = false;
     (async () => {
@@ -80,12 +119,16 @@ export default function SetupWizard({ onComplete, onBack, embedded = false }) {
         if (cancel) return;
         const v = s.values || {};
         setValues((cur) => ({
+          ...cur,
           openai: { ...cur.openai, ...(v.openai || {}) },
           postgres: { ...cur.postgres, ...(v.postgres || {}) },
           neo4j: { ...cur.neo4j, ...(v.neo4j || {}) },
         }));
+        // If status loaded successfully, the backend URL is already
+        // good — pre-pass that step so the user lands on OpenAI.
+        setTests((cur) => ({ ...cur, backend: { ok: true, message: "Backend reachable." } }));
       } catch (_) {
-        /* fresh install — keep defaults */
+        /* backend not yet reachable — wizard will gate at step 1 */
       }
     })();
     return () => {
@@ -96,7 +139,12 @@ export default function SetupWizard({ onComplete, onBack, embedded = false }) {
   const step = STEPS[stepIdx];
   const canAdvance = useMemo(() => {
     if (step.id === "review")
-      return tests.openai?.ok && tests.postgres?.ok && tests.neo4j?.ok;
+      return (
+        tests.backend?.ok &&
+        tests.openai?.ok &&
+        tests.postgres?.ok &&
+        tests.neo4j?.ok
+      );
     return tests[step.id]?.ok;
   }, [step, tests]);
 
@@ -109,7 +157,24 @@ export default function SetupWizard({ onComplete, onBack, embedded = false }) {
     setBusy(true);
     try {
       let res;
-      if (step.id === "openai") res = await testOpenAI(values.openai);
+      if (step.id === "backend") {
+        if (values.backend.mode === "hosted") {
+          // Use the API that ships with this deploy. Clear any stale
+          // localhost override so subsequent calls hit /api.
+          setApiBase("");
+          const r = await pingBackend(window.location.origin);
+          res = {
+            ok: true,
+            message: `Hosted backend reachable at ${r.url}/api`,
+          };
+        } else {
+          const r = await pingBackend(values.backend.url);
+          // Persist so every subsequent API call (openai/pg/neo4j tests
+          // and the final save) goes to this backend.
+          setApiBase(r.url);
+          res = { ok: true, message: `Backend reachable at ${r.url}` };
+        }
+      } else if (step.id === "openai") res = await testOpenAI(values.openai);
       else if (step.id === "postgres") res = await testPostgres(values.postgres);
       else if (step.id === "neo4j") res = await testNeo4j(values.neo4j);
       setTests((cur) => ({ ...cur, [step.id]: res }));
@@ -223,6 +288,12 @@ export default function SetupWizard({ onComplete, onBack, embedded = false }) {
             </div>
           </div>
 
+          {step.id === "backend" && (
+            <BackendForm
+              values={values.backend}
+              onChange={(p) => patch("backend", p)}
+            />
+          )}
           {step.id === "openai" && (
             <OpenAIForm values={values.openai} onChange={(p) => patch("openai", p)} />
           )}
@@ -337,6 +408,110 @@ function Field({ label, hint, optional, children }) {
       {children}
       {hint && <span className="setup-field-hint">{hint}</span>}
     </label>
+  );
+}
+
+function BackendForm({ values, onChange }) {
+  const isLocal = values.mode === "local";
+  return (
+    <div className="setup-grid">
+      <div className="setup-col-span-2">
+        <div className="backend-modes">
+          <button
+            type="button"
+            className={`backend-mode ${!isLocal ? "active" : ""}`}
+            onClick={() => onChange({ mode: "hosted" })}
+            aria-pressed={!isLocal}
+          >
+            <span className="backend-mode-dot" aria-hidden />
+            <span className="backend-mode-glyph" aria-hidden>☁</span>
+            <span className="backend-mode-title">Cloud databases</span>
+            <span className="backend-mode-pill">Recommended</span>
+            <span className="backend-mode-desc">
+              Use the API that ships with this site. Best for Neon,
+              Supabase, Vercel Postgres, Neo4j Aura — any DB reachable
+              from the public internet.
+            </span>
+            <span className="backend-mode-fine">No install. Paste connection strings.</span>
+          </button>
+          <button
+            type="button"
+            className={`backend-mode ${isLocal ? "active" : ""}`}
+            onClick={() => onChange({ mode: "local" })}
+            aria-pressed={isLocal}
+          >
+            <span className="backend-mode-dot" aria-hidden />
+            <span className="backend-mode-glyph" aria-hidden>⌂</span>
+            <span className="backend-mode-title">Localhost databases</span>
+            <span className="backend-mode-desc">
+              For Postgres / Neo4j running on your laptop. Run our Python
+              backend locally; this site talks to it from your browser.
+            </span>
+            <span className="backend-mode-fine">DB credentials never leave your machine.</span>
+          </button>
+        </div>
+      </div>
+
+      {isLocal && (
+        <>
+          <div className="setup-col-span-2">
+            <Field
+              label="Backend URL"
+              hint="Default for a local docker-compose run is http://localhost:8000. Browsers allow https→http for localhost, so this works even from the deployed site."
+            >
+              <input
+                type="url"
+                spellCheck="false"
+                placeholder="http://localhost:8000"
+                value={values.url || ""}
+                onChange={(e) => onChange({ url: e.target.value })}
+              />
+            </Field>
+          </div>
+          <div className="setup-col-span-2">
+            <div className="backend-help">
+              <div className="backend-help-title">Don't have it running?</div>
+              <p className="backend-help-body">
+                From the project root, run one of:
+              </p>
+              <pre className="backend-help-cmd">docker compose up</pre>
+              <pre className="backend-help-cmd">cd backend &amp;&amp; uvicorn app.main:app --port 8000</pre>
+              <p className="backend-help-foot">
+                The backend stays on your machine — your DB credentials never
+                leave it.
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {!isLocal && (
+        <div className="setup-col-span-2">
+          <div className="backend-help">
+            <div className="backend-help-title">Heads-up for hosted DBs</div>
+            <p className="backend-help-body">
+              In the next steps, paste your <strong>public</strong> connection
+              strings:
+            </p>
+            <ul className="backend-help-list">
+              <li>
+                <strong>Postgres:</strong> Neon / Supabase /
+                Vercel Postgres host (use the SSL endpoint, e.g.
+                <code>ep-xxx.neon.tech</code>).
+              </li>
+              <li>
+                <strong>Neo4j:</strong> Aura URI starting with
+                <code>neo4j+s://</code>.
+              </li>
+            </ul>
+            <p className="backend-help-foot">
+              Local <code>localhost</code> credentials won't reach the hosted
+              backend — switch to the other mode above if you need that.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -473,6 +648,14 @@ function TestResult({ result }) {
 
 function ReviewPanel({ values, tests }) {
   const rows = [
+    {
+      label: "Backend",
+      passed: tests.backend?.ok,
+      lines:
+        values.backend?.mode === "local"
+          ? [`Mode: local`, `URL: ${values.backend?.url || "(not set)"}`]
+          : [`Mode: hosted`, `URL: ${window.location.origin}/api`],
+    },
     {
       label: "OpenAI",
       passed: tests.openai?.ok,

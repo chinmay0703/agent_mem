@@ -1928,6 +1928,170 @@ body.resizing-h * {
   flex: 0 0 auto;
 }
 
+/* "Hosted vs local" mode picker for the backend step. Two radio-like
+   cards. Each card is itself a small CSS grid so glyph / title / dot
+   align cleanly without flex-wrap surprises (a flex row with mixed
+   text + pill broke when first attempted). */
+.backend-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+@media (max-width: 720px) {
+  .backend-modes { grid-template-columns: 1fr; }
+}
+.backend-mode {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto auto;
+  column-gap: 12px;
+  row-gap: 6px;
+  align-items: start;
+  padding: 18px 18px 16px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--lp-ink, inherit);
+  transition: border-color 120ms ease, background 120ms ease,
+              box-shadow 120ms ease, transform 120ms ease;
+}
+.backend-mode:hover {
+  border-color: rgba(59, 110, 232, 0.45);
+  background: rgba(59, 110, 232, 0.025);
+}
+.backend-mode:active { transform: translateY(1px); }
+.backend-mode.active {
+  border-color: rgba(59, 110, 232, 0.70);
+  background: rgba(59, 110, 232, 0.05);
+  box-shadow: 0 0 0 3px rgba(59, 110, 232, 0.12);
+}
+.backend-mode-glyph {
+  grid-row: 1 / span 2;
+  grid-column: 1;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(59, 110, 232, 0.08);
+  color: var(--lp-blue-strong, #2851b8);
+  font-size: 22px;
+  line-height: 1;
+}
+.backend-mode.active .backend-mode-glyph {
+  background: rgba(59, 110, 232, 0.16);
+}
+.backend-mode-title {
+  grid-row: 1;
+  grid-column: 2;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--lp-ink, inherit);
+  align-self: center;
+}
+.backend-mode-pill {
+  grid-row: 1;
+  grid-column: 3;
+  align-self: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(43, 179, 156, 0.14);
+  color: #0e6b4b;
+  white-space: nowrap;
+}
+.backend-mode-dot {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(15, 23, 42, 0.22);
+  background: #fff;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.backend-mode.active .backend-mode-dot {
+  border-color: var(--lp-blue-strong, #2851b8);
+  background: radial-gradient(circle at center, var(--lp-blue-strong, #2851b8) 42%, #fff 46%);
+}
+/* Hide the corner dot on the card that already shows the "Recommended"
+   pill — too many small glyphs in one corner. */
+.backend-mode .backend-mode-pill ~ .backend-mode-dot { display: none; }
+.backend-mode-desc {
+  grid-row: 2;
+  grid-column: 2 / -1;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-2, #4b5470);
+}
+.backend-mode-fine {
+  grid-row: 3;
+  grid-column: 2 / -1;
+  font-size: 12px;
+  color: var(--text-3, #7b8398);
+}
+
+.backend-help-list {
+  margin: 8px 0 10px;
+  padding-left: 20px;
+  color: var(--text-2, #4b5470);
+}
+.backend-help-list li { margin-bottom: 6px; line-height: 1.55; }
+.backend-help-list code {
+  background: rgba(15, 23, 42, 0.06);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin: 0 2px;
+}
+
+/* Help block for the "Backend URL" wizard step. Not an alert — a
+   docs-style card with copy-friendly command lines. */
+.backend-help {
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: rgba(59, 110, 232, 0.06);
+  border: 1px solid rgba(59, 110, 232, 0.18);
+  color: var(--lp-ink, inherit);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.backend-help-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--lp-blue-strong, #2851b8);
+}
+.backend-help-body {
+  margin: 0 0 10px;
+  color: var(--text-2, #4b5470);
+}
+.backend-help-cmd {
+  margin: 6px 0;
+  padding: 9px 12px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #e6edf3;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.4;
+  overflow-x: auto;
+  white-space: pre;
+}
+.backend-help-foot {
+  margin: 10px 0 0;
+  color: var(--text-2, #4b5470);
+}
+
 /* Review-step rows. */
 .setup-review {
   display: flex;
