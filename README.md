@@ -50,3 +50,4 @@ The repo includes `vercel.json` and `api/index.py`. Set credentials as
 Project Environment Variables in the Vercel dashboard — Vercel's
 serverless filesystem isn't persistent, so the wizard's on-disk save
 won't survive cold starts.
+# agent_mem
