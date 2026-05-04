@@ -1,3 +1,6 @@
+<img width="2880" height="7614" alt="screencapture-agent-mem-uw75-vercel-app-2026-05-04-12_55_23" src="https://github.com/user-attachments/assets/cba10c35-f352-49d6-b730-c90d373eef7d" />
+
+
 # Agent Mem
 
 Memory-augmented AI agent. Self-hosted. Drop in your documents, talk to it,
